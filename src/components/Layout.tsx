@@ -14,12 +14,15 @@ const Layout = ({ children }: LayoutProps) => {
         <Sidebar />
       </div>
 
-      <div className="flex-1 overflow-auto">{children}</div>
-
-      {/* BottomTab for mobile, hidden on web */}
       <div className="fixed inset-x-0 bottom-0 z-10 md:hidden">
         <BottomTab />
       </div>
+
+      <div className="flex-1 overflow-auto bg-gray-100 dark:bg-black">
+        {children}
+      </div>
+
+      {/* BottomTab for mobile, hidden on web */}
     </div>
   );
 };

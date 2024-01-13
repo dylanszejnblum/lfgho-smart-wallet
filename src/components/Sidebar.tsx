@@ -9,6 +9,7 @@ import {
   Card,
 } from "@/components/ui/card";
 import { Wallet, LineChart, Users, Ghost } from "lucide-react";
+import { ModeToggle } from "./ModeToggle";
 
 export default function Component() {
   return (
@@ -52,8 +53,8 @@ export default function Component() {
             </Link>
           </nav>
         </div>
-        <div className="p-4 mt-auto">
-          <Card>
+        <div className="p-4 mt-auto ">
+          <Card className="mb-2">
             <CardHeader className="pb-4">
               <CardTitle>Not connected</CardTitle>
               <CardDescription>
@@ -66,6 +67,7 @@ export default function Component() {
               </Button>
             </CardContent>
           </Card>
+          <ModeToggle />
         </div>
       </div>
     </aside>
