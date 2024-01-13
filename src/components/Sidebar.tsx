@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/router";
 import {
   CardTitle,
   CardDescription,
@@ -11,13 +11,18 @@ import {
 import { Wallet, LineChart, Users, Ghost } from "lucide-react";
 import { ModeToggle } from "./ModeToggle";
 
-export default function Component() {
+export default function Sidebar() {
+  const router = useRouter();
+
+  const isActive = (href: string) => {
+    return router.pathname === href;
+  };
   return (
-    <aside className="w-64 border-r bg-white dark:bg-gray-800">
+    <aside className="w-64 border-r ">
       <div className="flex flex-col h-full">
         <div className="flex h-[60px] items-center border-b px-6">
           <Link
-            href="#"
+            href="/wallet"
             passHref
             className="flex items-center gap-2 font-semibold"
           >
@@ -28,25 +33,37 @@ export default function Component() {
         <div className="flex-1 overflow-auto py-2">
           <nav className="flex flex-col gap-4 px-4">
             <Link
-              href="#"
+              href="/wallet"
               passHref
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
+                isActive("/wallet")
+                  ? "text-green-500 dark:text-green-500"
+                  : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+              }`}
             >
               <Wallet className="h-4 w-4" />
               Wallet
             </Link>
             <Link
-              href="#"
+              href="/earn"
               passHref
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
+                isActive("/earn")
+                  ? "text-green-500 dark:text-green-500"
+                  : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+              }`}
             >
               <LineChart className="h-4 w-4" />
               Earn
             </Link>
             <Link
-              href="#"
+              href="/groups"
               passHref
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
+                isActive("/groups")
+                  ? "text-green-500 dark:text-green-500"
+                  : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+              }`}
             >
               <Users className="h-4 w-4" />
               Groups
