@@ -8,7 +8,7 @@ import {
   CardContent,
   Card,
 } from "@/components/ui/card";
-import { Wallet, LineChart, Users, Ghost } from "lucide-react";
+import { Wallet, LineChart, Users, Ghost, Send } from "lucide-react";
 import { ModeToggle } from "./ModeToggle";
 
 export default function Sidebar() {
@@ -55,6 +55,18 @@ export default function Sidebar() {
             >
               <LineChart className="h-4 w-4" />
               Earn
+            </Link>
+            <Link
+              href="/send"
+              passHref
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
+                isActive("/send")
+                  ? "text-green-500 dark:text-green-500"
+                  : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+              }`}
+            >
+              <Send className="h-4 w-4" />
+              Send Money
             </Link>
             <Link
               href="/groups"
