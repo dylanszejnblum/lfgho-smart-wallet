@@ -83,19 +83,6 @@ export default function Sidebar() {
           </nav>
         </div>
         <div className="p-4 mt-auto ">
-          <Card className="mb-2">
-            <CardHeader className="pb-4">
-              <CardTitle>Not connected</CardTitle>
-              <CardDescription>
-                You dont seem to have an account please connect
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" size="sm">
-                Connect
-              </Button>
-            </CardContent>
-          </Card>
           <ModeToggle />
         </div>
       </div>
