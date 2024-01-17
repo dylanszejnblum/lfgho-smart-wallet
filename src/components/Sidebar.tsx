@@ -8,7 +8,7 @@ import {
   CardContent,
   Card,
 } from "@/components/ui/card";
-import { Wallet, LineChart, Users, Ghost, Send } from "lucide-react";
+import { Wallet, LineChart, Users, PackageCheck, Send } from "lucide-react";
 import { ModeToggle } from "./ModeToggle";
 
 export default function Sidebar() {
@@ -26,8 +26,8 @@ export default function Sidebar() {
             passHref
             className="flex items-center gap-2 font-semibold"
           >
-            <Ghost className="h-6 w-6" />
-            <span>GHOWALLET</span>
+            <PackageCheck className="h-6 w-6" />
+            <span>Simon</span>
           </Link>
         </div>
         <div className="flex-1 overflow-auto py-2">
