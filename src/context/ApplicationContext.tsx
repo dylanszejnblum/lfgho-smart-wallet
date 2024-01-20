@@ -94,6 +94,7 @@ type PasskeyMetaInfo = {
   credentialId?: string;
   credentialRawId?: string;
   publicKeyAsHex?: string;
+  indexOrSalt?:number
 };
 
 type LoggedInUser = {
@@ -251,7 +252,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       passkeyInfo.credentialRawId = rawIdAsBase64;
       passkeyInfo.publicKeyAsHex = publicKeyAsHex;
       passkeyInfo.accountAddress = await ztAccount.getAddress();
-
+      passkeyInfo.indexOrSalt = 0;
       // Save the information in the local storage {passkeyName => PasskeyMetaInfo} Map
       setLocalPasskeyMetaInfoMap((prevMap) => ({
         ...prevMap,
@@ -457,7 +458,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
 
     let credentialId;
     let pubKeyAsHex;
-    let indexOrSaltBytes = 0;
+    let indexOrSalt = 0;
     if (loginWith === "username") {
       // const ensAddress = await ethereumClient.getEnsAddress({
       //   name: normalize(`${nameOrUsername}.${subnameParent}`),
@@ -483,7 +484,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         42
       )}`;
       // Extract the index/salt bytes
-      indexOrSaltBytes = parseInt(
+      indexOrSalt = parseInt(
         zeroTrustMetaDataRecord.substring(42, 106),
         16
       );
@@ -504,7 +505,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
 
       console.log([
         accountFactoryAddress,
-        indexOrSaltBytes,
+        indexOrSalt,
         publicKeyLength,
         pubKeyAsHex,
         credentialId,
@@ -529,13 +530,13 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       userCredentials
     );
     console.log("(🪪,✅) Verification", verificationData);
-    const _loggedInUser = {
+    const _loggedInUser:LoggedInUser = {
       loginWith: loginWith,
       nameOrUsername: nameOrUsername,
       passkeyMetaInfo: {
         credentialId: credentialId,
         publicKeyAsHex: pubKeyAsHex,
-        indexOrSalt: indexOrSaltBytes,
+        indexOrSalt: indexOrSalt,
       },
     };
     setLoggedInUser(_loggedInUser);
