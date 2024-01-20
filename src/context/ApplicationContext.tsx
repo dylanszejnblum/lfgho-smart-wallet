@@ -48,7 +48,7 @@ import {
   setNameRecordPublicResolverAbi,
   setTextRecordPublicResolverAbi,
   zeroTrustDomainRegisterAbi,
-} from "@/utils/contracts/Subdomain";
+} from "@/utils/contracts/SubDomain";
 import {
   PassKeySignatureError,
   ZeroTrustPasskeyValidator,
@@ -58,6 +58,7 @@ import { toast } from "sonner";
 import { sepolia } from "viem/chains";
 import {
   GetUserOperationReceiptReturnType,
+  UserOperation,
   getAccountNonce,
 } from "permissionless";
 // Context Type
@@ -77,8 +78,8 @@ type ApplicationContextType = {
     username: string,
     passkeyName: string
   ) => Promise<void>;
-  handleLogin: (loginWith: string, nameOrUsername: string) => {};
-  isUsernameAvailable: (username: string) => Promise<Boolean>;
+  handleLogin: (loginWith: 'passkey_name'|'username', nameOrUsername: string) => Promise<boolean>;
+  isUsernameAvailable: (username: string) => Promise<boolean>;
   createPasskeyAccount: () => Promise<void>;
   backUpAccount: () => Promise<void>;
   sendUserOperation: () => Promise<void>;
@@ -92,8 +93,8 @@ type PasskeyMetaInfo = {
 };
 
 type LoggedInUser = {
-  username?: `${string}.0trust.eth`;
-  passkeyName?: string;
+  nameOrUsername?: string;
+  loginWith?: 'passkey_name'|'username';
   passkeyMetaInfo?: PasskeyMetaInfo;
 };
 
@@ -112,10 +113,10 @@ export const ApplicationContext = createContext<ApplicationContextType>({
   chain: undefined,
   handlePasskeyCreation: async () => {},
   handleUsernameCreation: async () => {},
-  handleLogin: async () => {},
+  handleLogin: async (loginWith: 'passkey_name'|'username', nameOrUsername: string) => {return false},
   createPasskeyAccount: async () => {},
   backUpAccount: async () => {},
-  isUsernameAvailable: (async) => {},
+  isUsernameAvailable: async() => {return false},
   sendUserOperation: async () => {},
 });
 
@@ -128,39 +129,48 @@ interface ApplicationContextProps {
 export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
   children,
 }) => {
+  const chain = "0xaa36a7";
   const [ethereumClient, setEthereumClient] =
     useState<PublicClient<Transport, Chain>>();
   const [bundlerClient, setBundlerClient] = useState<PimlicoBundlerClient>();
   const [paymasterClient, setPaymasterClient] =
     useState<PimlicoPaymasterV1Client>();
+
   const [accountAddress, setAccountAddress] = useState<`0x${string}`>();
   const accountFactoryAddress = "0x91161e6d7E9B6eCDb488467A5bd8A526C5f75A33";
   const entryPointAddress = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-  const chain = "0xaa36a7";
+  const foreverSubdomainRegistrar = "0x9B46528dFB626791E138dFb43E5224848E4469c6";
+  const publicResolverAddress = "0x8FADE66B79cC9f707aB26799354482EB93a5B7dD";
+  
+  //Sub domain constants
+  const subnameParent = "0trust.eth";
+  const subnameParentNode = namehash(subnameParent);
+  
+
+
   const [localPasskeyMetaInfoMap, setLocalPasskeyMetaInfoMap] =
     useLocalStorage<LocalPasskeyMetaInfoMap>("localPasskeyMetaInfoMap", {});
 
-  const foreverSubdomainRegistrar =
-    "0x9B46528dFB626791E138dFb43E5224848E4469c6";
+  
 
   useEffect(() => {
     const setClientsData = async () => {
       const ethereumClient = createPublicClient({
-        chain: sepolia, //baseGoerli,
+        chain: sepolia, 
         transport: http(),
       });
-      const _chain = "sepolia"; // 'base-goerli'
+      const _chain = "sepolia"; 
       const apiKey = process.env.NEXT_PUBLIC_PIMLICO_API_KEY;
       const pimlicoPaymasterEndpoint = `https://api.pimlico.io/v1/${_chain}/rpc?apikey=${apiKey}`;
       const bundlerEndpoint = `https://api.pimlico.io/v1/${_chain}/rpc?apikey=${apiKey}`;
 
       const bundlerClient = createPimlicoBundlerClient({
-        chain: sepolia, //baseGoerli,
+        chain: sepolia, 
         transport: http(bundlerEndpoint),
       });
 
       const pimlicoPaymasterClient = createPimlicoPaymasterV1Client({
-        chain: sepolia, //baseGoerli,
+        chain: sepolia, 
         transport: http(pimlicoPaymasterEndpoint),
       });
 
@@ -180,9 +190,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     },
     passkeyName: string
   ) => {
-    // handleNext();
-    // setCounterfactualAddress(localPasskeyMetaInfoMap[passkeyName].accountAddress)
-    // setPasskeyCreated(true)
+    
     const {
       data: credential,
       response,
@@ -195,7 +203,9 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     });
 
     if (error) {
+      throw new Error(error);
     }
+
     const passkeyInfo: PasskeyMetaInfo = {};
 
     if (credential && response) {
@@ -230,8 +240,8 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       passkeyInfo.credentialRawId = rawIdAsBase64;
       passkeyInfo.publicKeyAsHex = publicKeyAsHex;
       passkeyInfo.accountAddress = await ztAccount.getAddress();
-      // Save the information in the usernamePasskeyInfoMap
-
+      
+      // Save the information in the local storage {passkeyName => PasskeyMetaInfo} Map
       setLocalPasskeyMetaInfoMap((prevMap) => ({
         ...prevMap,
         [passkeyName]: passkeyInfo,
@@ -240,6 +250,11 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     }
   };
 
+  /**
+   * This method check whether the username(subdomain ens) is available for registration
+   * @param username 
+   * @returns 
+   */
   const isUsernameAvailable = async (username: string): Promise<boolean> => {
     const isAvailable = await ethereumClient.readContract({
       address: foreverSubdomainRegistrar,
@@ -250,26 +265,35 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     return isAvailable;
   };
 
+  /**
+   * This method register's a subdomain in the ENS regsitry for the account with given passkey
+   * @param username subdomain ens to be registered
+   * @param passkeyName passkey name to get the account for which subdomain is to be created
+   * @returns 
+   */
   const handleUsernameCreation = async (
     username: string,
     passkeyName: string
   ) => {
+    
+    if(!localPasskeyMetaInfoMap[passkeyName]){
+      throw new Error(`Passkey ${passkeyName} related metadata not found`);
+    }
     const isAvailable = await isUsernameAvailable(username);
     if (!isAvailable) {
-      toast(`Username NOT available`);
-
-      return;
+      throw new Error(`Username ${username} not available to be registered`);
     }
     try {
-      const publicKeyAsHex =
-        localPasskeyMetaInfoMap[passkeyName].publicKeyAsHex;
+
+      const publicKeyAsHex = localPasskeyMetaInfoMap[passkeyName].publicKeyAsHex;
       const publicKeyAsCryptoKey = await importPublicKeyAsCryptoKey(
         hex2buf(publicKeyAsHex)
       );
-      const credentialId = localPasskeyMetaInfoMap[passkeyName].credentialId;
       const [pubKeyX, pubKeyY] = await getPublicKeyXYCoordinate(
         publicKeyAsCryptoKey
       );
+      const credentialId = localPasskeyMetaInfoMap[passkeyName].credentialId;
+
       const passkeySigner = new ZeroTrustPasskeyValidator(
         BigInt(pubKeyX),
         BigInt(pubKeyY),
@@ -278,32 +302,43 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
 
       const ztAccount = new ZeroTrustSmartAccount(ethereumClient, {
         signer: passkeySigner,
-        accountFactoryAddress: "0x91161e6d7E9B6eCDb488467A5bd8A526C5f75A33",
+        accountFactoryAddress: accountFactoryAddress,
         entryPointAddress: entryPointAddress,
         index: BigInt(0),
       });
+
       console.log(`Account Address: ${await ztAccount.getAddress()}`);
+      
+      // Getting already saved account address, can use this to just assert that ztAccount.getAddress
+      // is same as saved one.
       const accountAddress = getAddress(
         localPasskeyMetaInfoMap[passkeyName].accountAddress
       );
+      console.assert(accountAddress === await ztAccount.getAddress(), "AccountAddress should be same as saved one.");
+      
       // create userOperation to register a ens subdomain of zerotrust.eth
-      const publicResolverAddress =
-        "0x8FADE66B79cC9f707aB26799354482EB93a5B7dD";
 
-      const subnameLabel = username;
-      const subnameRoot = "0trust.eth";
-      const parentNode = namehash(subnameRoot);
-      const textSubname = `${subnameLabel}.${subnameRoot}`;
-      const subdomainNode = namehash(textSubname);
-      console.log(`namehash of ${textSubname} : ${subdomainNode}`);
-      console.log(`namehash of ${subnameRoot} : ${parentNode}`);
+      const subname = `${username}.${subnameParent}`;
+      const subnameNode = namehash(subname);
 
+      console.log(`namehash of ${subname} : ${subnameNode}`);
+      console.log(`namehash of ${subnameParent} : ${subnameParentNode}`);
+
+      // ENS Address record for resolving username to Account Address
       const setAddressRecordCalldata = encodeFunctionData({
         abi: setAddressRecordPublicResolverAbi,
         functionName: "setAddr",
-        args: [subdomainNode, accountAddress],
+        args: [subnameNode, accountAddress],
       }) as Hex;
 
+      // ENS name record for resolving address to a username
+      const setNameRecordCalldata = encodeFunctionData({
+        abi: setNameRecordPublicResolverAbi,
+        functionName: "setName",
+        args: [subnameNode, subname],
+      }) as Hex;
+
+      // ENS text record to store account initcode parameters [passkeyMeta data]
       const textRecordKey = "zeroTrustMetaData";
       const lengthOfPublicKeyAsHex = publicKeyAsHex.length;
       const textRecordValue = `${accountFactoryAddress}${toHex(
@@ -315,21 +350,16 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       const setTextRecordCalldata = encodeFunctionData({
         abi: setTextRecordPublicResolverAbi,
         functionName: "setText",
-        args: [subdomainNode, textRecordKey, textRecordValue],
+        args: [subnameNode, textRecordKey, textRecordValue],
       }) as Hex;
 
-      const setNameRecordCalldata = encodeFunctionData({
-        abi: setNameRecordPublicResolverAbi,
-        functionName: "setName",
-        args: [subdomainNode, textSubname],
-      }) as Hex;
-
+      // Creating register a subname calldata 
       const registerCalldata = encodeFunctionData({
         abi: zeroTrustDomainRegisterAbi,
         functionName: "register",
         args: [
-          parentNode,
-          subnameLabel,
+          subnameParentNode,
+          username,
           accountAddress,
           publicResolverAddress,
           0,
@@ -337,26 +367,29 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
             setAddressRecordCalldata,
             setNameRecordCalldata,
             setTextRecordCalldata,
-          ], //,setNameRecordCalldata,setTextRecordCalldata
+          ], 
         ],
       }) as Hex;
 
-      const userOpCalldata = await ztAccount.encodeExecuteBatchCallData([
+      // Calldata to be called via account
+      const userOpCalldata = await ztAccount.encodeExecuteCallData(
         {
           to: foreverSubdomainRegistrar,
           value: BigInt(0),
           data: registerCalldata,
         },
-      ]);
-      const initCode = await ztAccount.getInitCode();
+      );
 
+      // Getting nonce value for the account
       const nonce = await getAccountNonce(ethereumClient, {
         sender: accountAddress,
         entryPoint: entryPointAddress,
       });
+
+      // Preparing the partial user operation
       const userOperation: UserOperation = {
-        callData: userOpCalldata, //'0x',//userOpCalldata,
-        initCode: nonce === BigInt(0) ? initCode : "0x",
+        callData: userOpCalldata ?? '0x',
+        initCode: nonce === BigInt(0) ? await ztAccount.getInitCode() : "0x",
         sender: accountAddress,
         nonce: nonce,
         maxFeePerGas: BigInt(2000000),
@@ -370,6 +403,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       };
 
       console.log(userOperation);
+
       const gasPrices = await bundlerClient.getUserOperationGasPrice();
       console.log(`Gas Price: ${gasPrices}`);
 
@@ -398,21 +432,19 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       });
 
       console.log(`UserOperation Hash: ${txHash}`);
-      const receipt = await bundlerClient.getUserOperationReceipt({
-        hash: txHash,
-      });
+      
 
-      console.log(`UserOperation Receipt: ${receipt}`);
       if (bundlerClient && txHash) {
         let txReceipt: GetUserOperationReceiptReturnType | undefined;
         do {
+          console.log('Getting UserOperation Receipt...');
           txReceipt = await bundlerClient.getUserOperationReceipt({
             hash: txHash,
           });
           if (!txReceipt) {
             await new Promise((resolve) => setTimeout(resolve, 2000)); // Add a 2-second delay
           } else {
-            console.log(txReceipt);
+            console.log(`Useroperation Receipt : ${txReceipt}`);
           }
         } while (!txReceipt);
       }
@@ -422,15 +454,22 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         console.error(e.details);
         message = e.details;
       }
-      if (e instanceof PassKeySignatureError) {
+      else if (e instanceof PassKeySignatureError) {
         console.error(e.message);
         message = e.message;
+      }else{
+        console.log(e);
+        throw new Error(e.message);
       }
-      console.log(e);
-      toast("test");
     }
   };
 
+  /**
+   * This method is used to verify passkey signature on client side
+   * @param publicKeyAsHexString 
+   * @param userCredentials 
+   * @returns 
+   */
   const verifyCredentials = async (
     publicKeyAsHexString: string,
     userCredentials: PublicKeyCredentialDescriptor
@@ -442,7 +481,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     } = await get({ allowCredentials: [userCredentials] });
     if (error) {
       console.log("(🪪,❌) Error", error);
-      toast("error asertion");
+      throw new Error(error);
     }
     if (assertion) {
       console.log("(🪪,✅) Assertion", assertion);
@@ -453,120 +492,93 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         publicKey,
         assertion: assertation,
       });
-      toast("authentication something..");
+      console.log(`verifyCredentials: ${verificationData}`);
       return verificationData;
     }
   };
 
-  const handleLogin = async (loginWith: string, nameOrUsername: string) => {
-    let dataSource;
-    let verificationData: Verification;
-    let _loggedInUser: LoggedInUser;
+  /**
+   * 
+   * @param loginWith this kinda specify the data source to get the passkey meta details
+   * @param nameOrUsername this is kinda identifier to that passkey meta data
+   */
+  const handleLogin = async (loginWith: 'passkey_name'|'username', nameOrUsername: string) => {
+    // Sanitize the input for security purposes
+    const sanitizedInput = sanitizeInput(nameOrUsername);
+    if (sanitizedInput.trim() === "") {
+      throw new Error("Please enter valid name or username.");
+    } 
+    
+    let credentialId ;
+    let pubKeyAsHex ;
+    if (loginWith === "username") {
+      // const ensAddress = await ethereumClient.getEnsAddress({
+      //   name: normalize(`${nameOrUsername}.${subnameParent}`),
+      // });
 
-    try {
-      // Sanitize the input for security purposes
-      const sanitizedInput = sanitizeInput(nameOrUsername);
-      if (sanitizedInput.trim() === "") {
-        console.log("Please enter your name or username.");
-      } else if (loginWith === "username") {
-        dataSource = "username";
-        const ensAddress = await ethereumClient.getEnsAddress({
-          // name: normalize(`${passkeyDisplayName}.zerotrust.eth`),
-          name: normalize(`${nameOrUsername}.0trust.eth`),
-        });
-        const zeroTrustMetaDataRecord = await ethereumClient.getEnsText({
-          name: normalize(`${nameOrUsername}.0trust.eth`),
-          key: "zeroTrustMetaData",
-        });
+      const zeroTrustMetaDataRecord = await ethereumClient.getEnsText({
+        name: normalize(`${nameOrUsername}.${subnameParent}`),
+        key: "zeroTrustMetaData",
+      });
 
-        console.log(ensAddress);
-        console.log(zeroTrustMetaDataRecord);
-
-        // const accountAddress = zeroTrustMetaDataRecord.substring(0, 42); // Extract the account address
-        const accountFactoryAddress = `${zeroTrustMetaDataRecord.substring(
-          0,
-          42
-        )}`; // Extract the account factory address
-        const zeroBytes = parseInt(
-          zeroTrustMetaDataRecord.substring(42, 106),
-          16
-        ); // Extract the zero bytes
-        const publicKeyLength = parseInt(
-          `${zeroTrustMetaDataRecord.substring(106, 170)}`,
-          16
-        ); // Extract the pubKeyX
-        const pubKeyAsHex = `${zeroTrustMetaDataRecord.substring(
-          170,
-          170 + publicKeyLength
-        )}`; // Extract the pubKeyY
-        const credentialId = hexToString(
-          `0x${zeroTrustMetaDataRecord.substring(170 + publicKeyLength)}`
-        ); // Extract the credentialId
-        console.log([
-          accountFactoryAddress,
-          zeroBytes,
-          publicKeyLength,
-          pubKeyAsHex,
-          credentialId,
-        ]);
-        _loggedInUser = {
-          username: `${nameOrUsername}.0trust.eth`,
-          passkeyMetaInfo: {
-            credentialId: credentialId,
-            publicKeyAsHex: pubKeyAsHex,
-          },
-        };
-
-        const userCredentials: PublicKeyCredentialDescriptor = {
-          id: parseBase64url(credentialId),
-          type: "public-key",
-        };
-        const publicKeyAsHexString = pubKeyAsHex;
-        verificationData = await verifyCredentials(
-          publicKeyAsHexString,
-          userCredentials
-        );
-        console.log("(🪪,✅) Verification", verificationData);
-      } else if (loginWith === "passkey_name") {
-        dataSource = "passkey";
-        // consider inputValue as a name and get details from local storage
-        if (localPasskeyMetaInfoMap[sanitizedInput]) {
-          const userCredentials: PublicKeyCredentialDescriptor = {
-            id: parseBase64url(
-              localPasskeyMetaInfoMap[sanitizedInput].credentialId
-            ),
-            type: "public-key",
-          };
-          const publicKeyAsHexString =
-            localPasskeyMetaInfoMap[sanitizedInput].publicKeyAsHex;
-          verificationData = await verifyCredentials(
-            publicKeyAsHexString,
-            userCredentials
-          );
-          _loggedInUser = {
-            passkeyName: nameOrUsername,
-            passkeyMetaInfo: {
-              credentialId:
-                localPasskeyMetaInfoMap[sanitizedInput].credentialId,
-              publicKeyAsHex: publicKeyAsHexString,
-            },
-          };
-          console.log("(🪪,✅) Verification", verificationData);
-        } else {
-          console.log("User not found.");
-        }
+      if(!zeroTrustMetaDataRecord){
+        throw new Error( `Cannot find the username ${nameOrUsername}.${subnameParent}`)
       }
-      // console.log('redirect_url in login page',searchParams.get('redirect_url'))
-      // console.log(searchParams)
-      //   if (searchParams.has("redirect_url") && verificationData.isValid) {
-      //     navigate(`${searchParams.get("redirect_url")}&user=${sanitizedInput}`);
-      //   } else if (verificationData.isValid && _loggedInUser) {
+      // console.log(ensAddress); // same as account address
 
-      //   }
-      console.log(verificationData.isValid);
-    } catch (error) {
-      console.log(error);
+      console.log(zeroTrustMetaDataRecord); // data used for initcode of account
+
+      // Extract the account factory address
+      const accountFactoryAddress = `${zeroTrustMetaDataRecord.substring( 0, 42 )}`; 
+      // Extract the index/salt bytes
+      const indexOrSaltBytes = parseInt(zeroTrustMetaDataRecord.substring(42, 106), 16 ); 
+      // Extract the length of pubKey
+      const publicKeyLength = parseInt(zeroTrustMetaDataRecord.substring(106, 170), 16 ); 
+      // Extract the pubKeyAsHex
+      pubKeyAsHex = zeroTrustMetaDataRecord.substring(  170, 170 + publicKeyLength ); 
+      // Extract the credentialId
+      credentialId = hexToString(
+        `0x${zeroTrustMetaDataRecord.substring(170 + publicKeyLength)}`
+      ); 
+
+      console.log([
+        accountFactoryAddress,
+        indexOrSaltBytes,
+        publicKeyLength,
+        pubKeyAsHex,
+        credentialId,
+      ]);
+
+    } else if (loginWith === "passkey_name") {
+      // inputValue as a passkeyName and get details from local storage
+
+      if(!localPasskeyMetaInfoMap[sanitizedInput]){
+        throw new Error('Cannot find the passkey details on local storage')
+      }
+      credentialId = localPasskeyMetaInfoMap[sanitizedInput].credentialId;
+      pubKeyAsHex = localPasskeyMetaInfoMap[sanitizedInput].publicKeyAsHex;
     }
+
+    const userCredentials: PublicKeyCredentialDescriptor = {
+      id: parseBase64url( credentialId ),
+      type: "public-key",
+    };
+      
+    const verificationData = await verifyCredentials(
+      pubKeyAsHex,
+      userCredentials
+    );
+    console.log("(🪪,✅) Verification", verificationData);
+    const _loggedInUser = {
+      loginWith:loginWith,
+      nameOrUsername: nameOrUsername,
+      passkeyMetaInfo: {
+        credentialId: credentialId,
+        publicKeyAsHex: pubKeyAsHex,
+      },
+    };
+    console.log(verificationData.isValid);
+    return verificationData.isValid;
   };
 
   const sanitizeInput = (input: string) => {
@@ -577,8 +589,6 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     return sanitizedInput;
   };
 
-  //   const handleLoginWithPasskey = async (passkeyName: string) => {};
-  //   const handleLoginWithUsername = async (username: string) => {};
 
   const createPasskeyAccount = async () => {};
   const backUpAccount = async () => {};
