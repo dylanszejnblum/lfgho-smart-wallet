@@ -18,12 +18,12 @@ const onboard = () => {
         </p>
         <div className="flex flex-col gap-2">
           <Link className="flex items-center gap-2" href="/signup">
-            <Button className="w-full" variant="outline">
+            <Button className="w-full" variant="secondary">
               Create Account
             </Button>
           </Link>
           <Link className="flex items-center gap-2" href="/login">
-            <Button className="w-full" variant="outline">
+            <Button className="w-full" variant="default">
               Login
             </Button>
           </Link>

@@ -85,16 +85,18 @@ type ApplicationContextType = {
   isUsernameAvailable: (username: string) => Promise<boolean>;
   createPasskeyAccount: () => Promise<void>;
   backUpAccount: () => Promise<void>;
-  sendUserOperation: (arg:  {
+  sendUserOperation: (arg: {
     to: `0x${string}`;
     value: bigint;
     data: `0x${string}`;
   }) => Promise<void>;
-  sendBatchUserOperation : (args:  {
-    to: `0x${string}`;
-    value: bigint;
-    data: `0x${string}`;
-  }[]) => Promise<void>
+  sendBatchUserOperation: (
+    args: {
+      to: `0x${string}`;
+      value: bigint;
+      data: `0x${string}`;
+    }[]
+  ) => Promise<void>;
 };
 
 type PasskeyMetaInfo = {
@@ -102,7 +104,7 @@ type PasskeyMetaInfo = {
   credentialId?: string;
   credentialRawId?: string;
   publicKeyAsHex?: string;
-  indexOrSalt?:number
+  indexOrSalt?: number;
 };
 
 type LoggedInUser = {
@@ -137,16 +139,18 @@ export const ApplicationContext = createContext<ApplicationContextType>({
   isUsernameAvailable: async () => {
     return false;
   },
-  sendUserOperation: async (arg:  {
+  sendUserOperation: async (arg: {
     to: `0x${string}`;
     value: bigint;
     data: `0x${string}`;
   }) => {},
-  sendBatchUserOperation: async (arg:  {
-    to: `0x${string}`;
-    value: bigint;
-    data: `0x${string}`;
-  }[]) => {},
+  sendBatchUserOperation: async (
+    arg: {
+      to: `0x${string}`;
+      value: bigint;
+      data: `0x${string}`;
+    }[]
+  ) => {},
 });
 
 // Provider Props Type
@@ -501,10 +505,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         42
       )}`;
       // Extract the index/salt bytes
-      indexOrSalt = parseInt(
-        zeroTrustMetaDataRecord.substring(42, 106),
-        16
-      );
+      indexOrSalt = parseInt(zeroTrustMetaDataRecord.substring(42, 106), 16);
       // Extract the length of pubKey
       const publicKeyLength = parseInt(
         zeroTrustMetaDataRecord.substring(106, 170),
@@ -547,7 +548,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       userCredentials
     );
     console.log("(🪪,✅) Verification", verificationData);
-    const _loggedInUser:LoggedInUser = {
+    const _loggedInUser: LoggedInUser = {
       loginWith: loginWith,
       nameOrUsername: nameOrUsername,
       passkeyMetaInfo: {
@@ -557,6 +558,8 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       },
     };
     setLoggedInUser(_loggedInUser);
+    setAccountAddress(localPasskeyMetaInfoMap[sanitizedInput].accountAddress);
+
     console.log(verificationData.isValid);
     return verificationData.isValid;
   };
@@ -572,11 +575,13 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
   const createPasskeyAccount = async () => {};
   const backUpAccount = async () => {};
 
-  const sendBatchUserOperation = async (args:  {
-    to: `0x${string}`;
-    value: bigint;
-    data: `0x${string}`;
-  }[]) =>{
+  const sendBatchUserOperation = async (
+    args: {
+      to: `0x${string}`;
+      value: bigint;
+      data: `0x${string}`;
+    }[]
+  ) => {
     if (
       !loggedInUser ||
       !loggedInUser.nameOrUsername ||
@@ -607,16 +612,16 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       index: BigInt(0),
     });
 
-    const userOpCalldata: `0x${string}` = await ztAccount.encodeExecuteBatchCallData(args);
+    const userOpCalldata: `0x${string}` =
+      await ztAccount.encodeExecuteBatchCallData(args);
 
     await executeUserOperation(userOpCalldata, ztAccount);
-  }
-  const sendUserOperation = async (arg:  {
+  };
+  const sendUserOperation = async (arg: {
     to: `0x${string}`;
     value: bigint;
     data: `0x${string}`;
   }) => {
-    
     if (
       !loggedInUser ||
       !loggedInUser.nameOrUsername ||
@@ -647,7 +652,9 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       index: BigInt(0),
     });
 
-    const userOpCalldata: `0x${string}` = await ztAccount.encodeExecuteCallData(arg);
+    const userOpCalldata: `0x${string}` = await ztAccount.encodeExecuteCallData(
+      arg
+    );
 
     await executeUserOperation(userOpCalldata, ztAccount);
   };
@@ -750,7 +757,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         backUpAccount,
         isUsernameAvailable,
         sendUserOperation,
-        sendBatchUserOperation
+        sendBatchUserOperation,
       }}
     >
       {children}

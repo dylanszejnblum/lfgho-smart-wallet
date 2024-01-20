@@ -17,6 +17,7 @@ import {
   Table,
 } from "@/components/ui/table";
 import { QrCode, ArrowDown, Wallet, Plane } from "lucide-react";
+import QrCodeModal from "@/components/QrCodeModal";
 const wallet = () => {
   return (
     <>
@@ -24,21 +25,14 @@ const wallet = () => {
         <h1 className="text-2xl font-semibold text-center">My Balance</h1>
         <p className="text-6xl font-bold text-center my-4">9.44 Gho</p>
         <div className="flex justify-between my-6">
-          <Button className="bg-green-500 text-white">
-            <QrCode className="text-white" />
-            {"\n          "} Receive Money{"\n          "}
-          </Button>
-          <Button className="bg-green-500 text-white">
-            <ArrowDown className="text-white" />
-            {"\n          "} Request Money{"\n          "}
-          </Button>
+          <QrCodeModal />
         </div>
       </div>
       <Card className="w-full max-w-3xl mx-auto">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Wallet className="h-6 w-6 text-green-500" />
+              <Wallet className="h-6 w-6 text-pink-400" />
               <div>
                 <CardTitle>My tokens</CardTitle>
               </div>

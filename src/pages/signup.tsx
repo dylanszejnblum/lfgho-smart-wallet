@@ -20,6 +20,7 @@ import {
   Dialog,
 } from "@/components/ui/dialog";
 import { useRouter } from "next/router";
+import { PackageCheck } from "lucide-react";
 
 const signup = () => {
   const { handlePasskeyCreation, accountAddress, handleUsernameCreation } =
@@ -50,6 +51,12 @@ const signup = () => {
   return (
     <div>
       <div className="flex flex-col items-center justify-center min-h-screen ">
+        <header className="flex h-16 items-center justify-between px-4 md:px-6">
+          <Link className="flex items-center gap-2" href="#">
+            <PackageCheck className="h-6 w-6" />
+            <span className="text-lg font-semibold">Simon</span>
+          </Link>
+        </header>
         <div className="w-full max-w-md">
           <Card className="">
             <CardHeader className="space-y-1">
@@ -76,7 +83,7 @@ const signup = () => {
                   <DialogTrigger asChild>
                     <Button
                       className="w-full"
-                      variant="outline"
+                      variant="default"
                       onClick={() => {
                         createPasskey(passkeyInput);
                       }}
@@ -112,6 +119,7 @@ const signup = () => {
                         onClick={() => {
                           createUsername(userNameInput, passkeyInput);
                         }}
+                        variant="default"
                       >
                         Create Username
                       </Button>

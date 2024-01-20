@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { PackageCheck } from "lucide-react";
 import {
   DialogTrigger,
   DialogTitle,
@@ -53,6 +54,13 @@ const login = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen ">
+      <header className="flex h-16 items-center justify-between px-4 md:px-6">
+        <Link className="flex items-center gap-2" href="#">
+          <PackageCheck className="h-6 w-6" />
+          <span className="text-lg font-semibold">Simon</span>
+        </Link>
+      </header>
+
       <div className="w-full max-w-md">
         <Card className="">
           <CardHeader className="space-y-1">
@@ -67,7 +75,7 @@ const login = () => {
             <div className="space-y-4">
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button className="w-full mb-4" variant="outline">
+                  <Button className="w-full mb-4" variant="default">
                     Login with Passkeys
                   </Button>
                 </DialogTrigger>
@@ -102,7 +110,7 @@ const login = () => {
               </Dialog>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button className="w-full" variant="outline">
+                  <Button className="w-full" variant="secondary">
                     Login with Username
                   </Button>
                 </DialogTrigger>

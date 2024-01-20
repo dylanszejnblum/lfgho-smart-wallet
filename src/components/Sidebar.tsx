@@ -30,7 +30,7 @@ export default function Sidebar() {
               passHref
               className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
                 isActive("/wallet")
-                  ? "text-green-500 dark:text-green-500"
+                  ? "text-pink-400 dark:text-pink-400"
                   : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
               }`}
             >
@@ -42,7 +42,7 @@ export default function Sidebar() {
               passHref
               className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
                 isActive("/earn")
-                  ? "text-green-500 dark:text-green-500"
+                  ? "text-pink-400 dark:text-pink-400"
                   : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
               }`}
             >
@@ -54,7 +54,7 @@ export default function Sidebar() {
               passHref
               className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
                 isActive("/send")
-                  ? "text-green-500 dark:text-green-500"
+                  ? "text-pink-400 dark:text-pink-400"
                   : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
               }`}
             >
@@ -66,7 +66,7 @@ export default function Sidebar() {
               passHref
               className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
                 isActive("/groups")
-                  ? "text-green-500 dark:text-green-500"
+                  ? "text-pink-400 dark:text-pink-400"
                   : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
               }`}
             >
