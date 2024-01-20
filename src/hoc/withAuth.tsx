@@ -5,7 +5,7 @@ import { useSessionStorage } from "usehooks-ts";
 const withAuth = (WrappedComponent) => {
   return (props) => {
     // Replace useAuth with useSessionStorage
-    const [LoggedInUser] = useSessionStorage("LoggedInUser", null); // Assuming 'user' is the key for logged in user
+    const [LoggedInUser] = useSessionStorage("loggedInUser", null); // Assuming 'user' is the key for logged in user
     const isLoggedIn = Boolean(LoggedInUser);
     const router = useRouter();
 

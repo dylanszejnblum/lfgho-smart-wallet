@@ -84,7 +84,6 @@ const login = () => {
                       <Input
                         id="passkeys"
                         required
-                        type="password"
                         onChange={handlePasskeyChange}
                         value={passkeyInput}
                       />

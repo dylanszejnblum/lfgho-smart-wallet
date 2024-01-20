@@ -1,9 +1,6 @@
+import withAuth from "@/hoc/withAuth";
 const index = () => {
-  return (
-    <div>
-      Enter
-    </div>
-  );
-}
+  return <div>Enter</div>;
+};
 
-export default index;
+export default withAuth(index);
