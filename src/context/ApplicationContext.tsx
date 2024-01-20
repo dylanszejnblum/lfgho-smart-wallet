@@ -604,6 +604,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         indexOrSalt: indexOrSaltBytes,
       },
     };
+    setLogedInUser(_loggedInUser);
     console.log(verificationData.isValid);
     return verificationData.isValid;
   };
