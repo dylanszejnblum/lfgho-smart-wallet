@@ -1,3 +1,5 @@
+import withAuth from "@/hoc/withAuth";
+
 import { TabsTrigger, TabsList, TabsContent, Tabs } from "@/components/ui/tabs";
 import {
   TableHead,
@@ -93,4 +95,4 @@ const earn = () => {
   );
 };
 
-export default earn;
+export default withAuth(earn);

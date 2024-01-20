@@ -8,16 +8,26 @@ import { Toaster } from "@/components/ui/sonner";
 import { ApplicationProvider } from "@/context/ApplicationContext";
 
 const queryClient = new QueryClient();
+import { useAuth } from "@/hooks/useAuth"; // Import the hook
 
 export default function App({ Component, pageProps }: AppProps) {
+  const isLoggedIn = useAuth(); // Use the custom hook
+
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <ApplicationProvider>
         <QueryClientProvider client={queryClient}>
-          <Layout>
-            <Toaster />
-            <Component {...pageProps} />
-          </Layout>
+          {isLoggedIn ? (
+            <Layout>
+              <Toaster />
+              <Component {...pageProps} />
+            </Layout>
+          ) : (
+            <>
+              <Toaster />
+              <Component {...pageProps} />
+            </>
+          )}
         </QueryClientProvider>
       </ApplicationProvider>
     </ThemeProvider>

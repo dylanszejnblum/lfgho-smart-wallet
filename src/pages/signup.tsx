@@ -7,7 +7,7 @@ const signup = () => {
     <div>
       <Button
         onClick={() => {
-          handlePasskeyCreation({}, "test");
+          handlePasskeyCreation({}, "testo");
         }}
       >
         Create Passkey
@@ -17,7 +17,7 @@ const signup = () => {
 
       <Button
         onClick={() => {
-          handleUsernameCreation("test", "test");
+          handleUsernameCreation("testo", "testo");
         }}
       >
         Handle username creation

@@ -1,3 +1,5 @@
+import withAuth from "@/hoc/withAuth";
+
 import { Button } from "@/components/ui/button";
 import {
   CardTitle,
@@ -69,4 +71,4 @@ const wallet = () => {
   );
 };
 
-export default wallet;
+export default withAuth(wallet);
