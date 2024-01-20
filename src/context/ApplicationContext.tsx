@@ -50,6 +50,7 @@ import {
   zeroTrustDomainRegisterAbi,
 } from "@/utils/contracts/SubDomain";
 import {
+  AccountValidator,
   PassKeySignatureError,
   ZeroTrustPasskeyValidator,
   ZeroTrustSmartAccount,
@@ -85,7 +86,7 @@ type ApplicationContextType = {
   isUsernameAvailable: (username: string) => Promise<boolean>;
   createPasskeyAccount: () => Promise<void>;
   backUpAccount: () => Promise<void>;
-  sendUserOperation: () => Promise<void>;
+  sendUserOperation: (userOpCalldata: `0x${string}`) => Promise<void>;
 };
 
 type PasskeyMetaInfo = {
@@ -600,10 +601,9 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       passkeyMetaInfo: {
         credentialId: credentialId,
         publicKeyAsHex: pubKeyAsHex,
+        indexOrSalt: indexOrSaltBytes,
       },
     };
-
-    setLogedInUser(_loggedInUser);
     console.log(verificationData.isValid);
     return verificationData.isValid;
   };
@@ -618,7 +618,121 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
 
   const createPasskeyAccount = async () => {};
   const backUpAccount = async () => {};
-  const sendUserOperation = async () => {};
+
+  const sendUserOperation = async (userOpCalldata: `0x${string}`) => {
+    if (
+      !loggedInUser ||
+      !loggedInUser.nameOrUsername ||
+      loggedInUser.passkeyMetaInfo
+    ) {
+      throw new Error("Please Login to send user operation");
+    }
+
+    const publicKeyAsHex = loggedInUser.passkeyMetaInfo.publicKeyAsHex;
+    const publicKeyAsCryptoKey = await importPublicKeyAsCryptoKey(
+      hex2buf(publicKeyAsHex)
+    );
+    const [pubKeyX, pubKeyY] = await getPublicKeyXYCoordinate(
+      publicKeyAsCryptoKey
+    );
+    const credentialId = loggedInUser.passkeyMetaInfo.credentialId;
+
+    const passkeySigner = new ZeroTrustPasskeyValidator(
+      BigInt(pubKeyX),
+      BigInt(pubKeyY),
+      credentialId
+    );
+
+    const ztAccount = new ZeroTrustSmartAccount(ethereumClient, {
+      signer: passkeySigner,
+      accountFactoryAddress: accountFactoryAddress,
+      entryPointAddress: entryPointAddress,
+      index: BigInt(0),
+    });
+
+    await executeUserOperation(userOpCalldata, ztAccount);
+  };
+
+  async function executeUserOperation<
+    TSigner extends AccountValidator<TSignerValidatorData>,
+    TSignerValidatorData,
+    TTransport extends Transport,
+    TChain extends Chain
+  >(
+    userOpCalldata: `0x${string}`,
+    ztAccount: ZeroTrustSmartAccount<
+      TSigner,
+      TSignerValidatorData,
+      TTransport,
+      TChain
+    >
+  ) {
+    // Getting nonce value for the account
+    const nonce = await getAccountNonce(ethereumClient, {
+      sender: accountAddress,
+      entryPoint: entryPointAddress,
+    });
+
+    // Preparing the partial user operation
+    const userOperation: UserOperation = {
+      callData: userOpCalldata ?? "0x",
+      initCode: nonce === BigInt(0) ? await ztAccount.getInitCode() : "0x",
+      sender: accountAddress,
+      nonce: nonce,
+      maxFeePerGas: BigInt(2000000),
+      maxPriorityFeePerGas: BigInt(2000000),
+      callGasLimit: BigInt(2000000),
+      preVerificationGas: BigInt(2000000),
+      verificationGasLimit: BigInt(2000000),
+      paymasterAndData: "0x",
+      signature:
+        "0x00000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000170000000000000000000000000000000000000000000000000000000000000001417ad42d8551e4909ae47832ecb19f3f1dcc6d401de925a1dac9795354aef06b1a04cfe1fe086536a0c5da9034788be826d0a32856881de89ef0be4a3b75deec000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000002549960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d9763050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000867b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a225f4b446e774676464534766a666f3154546561306d676a7662546c50397a2d2d71696977566567326f3977222c226f726967696e223a22687474703a2f2f6c6f63616c686f73743a35313733222c2263726f73734f726967696e223a66616c73657d0000000000000000000000000000000000000000000000000000",
+    };
+
+    console.log(userOperation);
+
+    const gasPrices = await bundlerClient.getUserOperationGasPrice();
+    console.log(`Gas Price: ${gasPrices}`);
+
+    userOperation.maxFeePerGas = gasPrices.standard.maxFeePerGas;
+    userOperation.maxPriorityFeePerGas =
+      gasPrices.standard.maxPriorityFeePerGas;
+
+    const sponsorUserOperation = await paymasterClient.sponsorUserOperationV1({
+      entryPoint: entryPointAddress,
+      userOperation: userOperation,
+    });
+    console.log(sponsorUserOperation);
+
+    userOperation.paymasterAndData = sponsorUserOperation.paymasterAndData;
+
+    const signature = await ztAccount.signUserOperation(userOperation, {});
+    console.log(`Signature : ${signature}`);
+    userOperation.signature = signature;
+    console.log(`Sending User Operation: ${userOperation}`);
+    console.log(userOperation);
+    const txHash = await bundlerClient.sendUserOperation({
+      entryPoint: entryPointAddress,
+      userOperation: userOperation,
+    });
+
+    console.log(`UserOperation Hash: ${txHash}`);
+
+    if (bundlerClient && txHash) {
+      let txReceipt: GetUserOperationReceiptReturnType | undefined;
+      do {
+        console.log("Getting UserOperation Receipt...");
+        txReceipt = await bundlerClient.getUserOperationReceipt({
+          hash: txHash,
+        });
+        if (!txReceipt) {
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // Add a 2-second delay
+        } else {
+          console.log(`Useroperation Receipt : ${txReceipt}`);
+        }
+      } while (!txReceipt);
+    }
+  }
 
   return (
     <ApplicationContext.Provider
