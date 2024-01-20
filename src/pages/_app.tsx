@@ -3,6 +3,7 @@ import type { AppProps } from "next/app";
 import Layout from "@/components/Layout";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/sonner";
 
 import { ApplicationProvider } from "@/context/ApplicationContext";
 
@@ -14,6 +15,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <ApplicationProvider>
         <QueryClientProvider client={queryClient}>
           <Layout>
+            <Toaster />
             <Component {...pageProps} />
           </Layout>
         </QueryClientProvider>
