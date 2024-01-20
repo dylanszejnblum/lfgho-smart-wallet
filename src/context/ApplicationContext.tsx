@@ -55,7 +55,6 @@ import {
   ZeroTrustPasskeyValidator,
   ZeroTrustSmartAccount,
 } from "zero-trust-core-sdk";
-import { toast } from "sonner";
 import { sepolia } from "viem/chains";
 import {
   GetUserOperationReceiptReturnType,
@@ -86,7 +85,16 @@ type ApplicationContextType = {
   isUsernameAvailable: (username: string) => Promise<boolean>;
   createPasskeyAccount: () => Promise<void>;
   backUpAccount: () => Promise<void>;
-  sendUserOperation: (userOpCalldata: `0x${string}`) => Promise<void>;
+  sendUserOperation: (arg:  {
+    to: `0x${string}`;
+    value: bigint;
+    data: `0x${string}`;
+  }) => Promise<void>;
+  sendBatchUserOperation : (args:  {
+    to: `0x${string}`;
+    value: bigint;
+    data: `0x${string}`;
+  }[]) => Promise<void>
 };
 
 type PasskeyMetaInfo = {
@@ -129,7 +137,16 @@ export const ApplicationContext = createContext<ApplicationContextType>({
   isUsernameAvailable: async () => {
     return false;
   },
-  sendUserOperation: async (userOpCalldata: `0x${string}`) => {},
+  sendUserOperation: async (arg:  {
+    to: `0x${string}`;
+    value: bigint;
+    data: `0x${string}`;
+  }) => {},
+  sendBatchUserOperation: async (arg:  {
+    to: `0x${string}`;
+    value: bigint;
+    data: `0x${string}`;
+  }[]) => {},
 });
 
 // Provider Props Type
@@ -555,7 +572,11 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
   const createPasskeyAccount = async () => {};
   const backUpAccount = async () => {};
 
-  const sendUserOperation = async (userOpCalldata: `0x${string}`) => {
+  const sendBatchUserOperation = async (args:  {
+    to: `0x${string}`;
+    value: bigint;
+    data: `0x${string}`;
+  }[]) =>{
     if (
       !loggedInUser ||
       !loggedInUser.nameOrUsername ||
@@ -585,6 +606,48 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       entryPointAddress: entryPointAddress,
       index: BigInt(0),
     });
+
+    const userOpCalldata: `0x${string}` = await ztAccount.encodeExecuteBatchCallData(args);
+
+    await executeUserOperation(userOpCalldata, ztAccount);
+  }
+  const sendUserOperation = async (arg:  {
+    to: `0x${string}`;
+    value: bigint;
+    data: `0x${string}`;
+  }) => {
+    
+    if (
+      !loggedInUser ||
+      !loggedInUser.nameOrUsername ||
+      loggedInUser.passkeyMetaInfo
+    ) {
+      throw new Error("Please Login to send user operation");
+    }
+
+    const publicKeyAsHex = loggedInUser.passkeyMetaInfo.publicKeyAsHex;
+    const publicKeyAsCryptoKey = await importPublicKeyAsCryptoKey(
+      hex2buf(publicKeyAsHex)
+    );
+    const [pubKeyX, pubKeyY] = await getPublicKeyXYCoordinate(
+      publicKeyAsCryptoKey
+    );
+    const credentialId = loggedInUser.passkeyMetaInfo.credentialId;
+
+    const passkeySigner = new ZeroTrustPasskeyValidator(
+      BigInt(pubKeyX),
+      BigInt(pubKeyY),
+      credentialId
+    );
+
+    const ztAccount = new ZeroTrustSmartAccount(ethereumClient, {
+      signer: passkeySigner,
+      accountFactoryAddress: accountFactoryAddress,
+      entryPointAddress: entryPointAddress,
+      index: BigInt(0),
+    });
+
+    const userOpCalldata: `0x${string}` = await ztAccount.encodeExecuteCallData(arg);
 
     await executeUserOperation(userOpCalldata, ztAccount);
   };
@@ -687,6 +750,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         backUpAccount,
         isUsernameAvailable,
         sendUserOperation,
+        sendBatchUserOperation
       }}
     >
       {children}
