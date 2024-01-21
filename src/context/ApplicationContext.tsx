@@ -618,7 +618,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       data: `0x${string}`;
     }[]
   ) => {
-    if (!loggedInUser?.nameOrUsername || !loggedInUser?.passkeyMetaInfo?.accountAddress) {
+    if (!loggedInUser?.nameOrUsername || !loggedInUser?.passkeyMetaInfo?.credentialId || !loggedInUser?.passkeyMetaInfo?.publicKeyAsHex) {
       throw new Error("Please Login to send user operation");
     }
 
@@ -655,7 +655,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     data: `0x${string}`;
   }) => {
 
-    if (!loggedInUser?.nameOrUsername || !loggedInUser?.passkeyMetaInfo?.accountAddress) {
+    if (!loggedInUser?.nameOrUsername || !loggedInUser?.passkeyMetaInfo?.credentialId || !loggedInUser?.passkeyMetaInfo?.publicKeyAsHex) {
       throw new Error("Please Login to send user operation");
     }
     const publicKeyAsHex = loggedInUser.passkeyMetaInfo.publicKeyAsHex;
@@ -805,7 +805,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     tokenDecimals: number
   ) => {
     try {
-      const response = await encodeFunctionData({
+      const response = encodeFunctionData({
         abi: erc20ABI,
         functionName: "approve",
         args: [
