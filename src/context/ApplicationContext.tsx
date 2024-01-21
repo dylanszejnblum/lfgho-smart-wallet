@@ -6,6 +6,7 @@ import {
   PimlicoBundlerClient,
   createPimlicoBundlerClient,
 } from "permissionless/clients/pimlico";
+
 import React, {
   createContext,
   useContext,
@@ -66,6 +67,7 @@ import {
   getAccountNonce,
 } from "permissionless";
 import { erc20ABI } from "wagmi";
+import { toast } from "sonner";
 // Context Type
 type ApplicationContextType = {
   ethereumClient: PublicClient<Transport, Chain> | undefined;
@@ -114,6 +116,19 @@ type ApplicationContextType = {
     addressToQuery: string,
     amount: string,
     tokenDecimals: number
+  ) => Promise<any>;
+  supplyAave: (
+    assetAddress: string,
+    userAddress: string,
+    amount: string,
+    tokenDecimals: number
+  ) => Promise<any>;
+  borrowAave: (
+    assetAddress: string,
+    userAddress: string,
+    amount: string,
+    tokenDecimals: number,
+    intrestRateMode: bigint
   ) => Promise<any>;
 };
 
@@ -185,6 +200,21 @@ export const ApplicationContext = createContext<ApplicationContextType>({
     addressToQuery: string,
     amount: string,
     tokenDecimals: number
+  ) => {},
+
+  supplyAave: async (
+    assetAddress: string,
+    userAddress: string,
+    amount: string,
+    tokenDecimals: number
+  ) => {},
+
+  borrowAave: async (
+    assetAddress: string,
+    userAddress: string,
+    amount: string,
+    tokenDecimals: number,
+    intrestRateMode: bigint
   ) => {},
 });
 
@@ -766,6 +796,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         txReceipt = await bundlerClient.getUserOperationReceipt({
           hash: txHash,
         });
+        // console.log(txReceipt.receipt.transactionHash);
         if (!txReceipt) {
           await new Promise((resolve) => setTimeout(resolve, 2000)); // Add a 2-second delay
         } else {
@@ -826,17 +857,89 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         value: BigInt(0),
         data: response,
       });
+
+      toast("Transaction send succesfully!");
     } catch (error) {
       console.error("Failed to fetch balance:", error);
       return ""; // Return an empty string or some default value in case of error
     }
   };
 
-  // const supplyAave = async (
-  //   assetAddress: string,
-  //   amount,
-  //   onBehalfOf: string
-  // ) => {};
+  const supplyAave = async (
+    assetAddress: string,
+    userAddress: string,
+    amount: string,
+    tokenDecimals: number
+  ) => {
+    try {
+      const tokenApprovalCallData = encodeFunctionData({
+        abi: erc20ABI,
+        functionName: "approve",
+        args: [
+          DepositETH.address as `0x${string}`,
+          parseUnits(amount, tokenDecimals),
+        ],
+      }) as Hex;
+      const supplyCallData = encodeFunctionData({
+        abi: DepositETH.abi,
+        functionName: "supply",
+        args: [
+          assetAddress as `0x${string}`,
+          parseUnits(amount, tokenDecimals),
+          userAddress as `0x${string}`,
+          0,
+        ],
+      }) as Hex;
+
+      await sendBatchUserOperation([
+        {
+          to: assetAddress as `0x${string}`,
+          value: BigInt(0),
+          data: tokenApprovalCallData,
+        },
+        {
+          to: DepositETH.address as `0x${string}`,
+          value: BigInt(0),
+          data: supplyCallData,
+        },
+      ]);
+
+      toast("Asset Supplied  succesfully!");
+    } catch (error) {
+      console.error("Failed to fetch balance:", error);
+      return ""; // Return an empty string or some default value in case of error
+    }
+  };
+  const borrowAave = async (
+    assetAddress: string,
+    userAddress: string,
+    amount: string,
+    tokenDecimals: number,
+    intrestRateMode: bigint
+  ) => {
+    try {
+      const response = encodeFunctionData({
+        abi: DepositETH.abi,
+        functionName: "borrow",
+        args: [
+          assetAddress as `0x${string}`,
+          parseUnits(amount, tokenDecimals),
+          intrestRateMode,
+          0,
+          userAddress as `0x${string}`,
+        ],
+      }) as Hex;
+
+      await sendUserOperation({
+        to: DepositETH.address as `0x${string}`,
+        value: BigInt(0),
+        data: response,
+      });
+    } catch (error) {
+      console.error("Failed to fetch balance:", error);
+      return ""; // Return an empty string or some default value in case of error
+    }
+  };
 
   return (
     <ApplicationContext.Provider
@@ -860,6 +963,8 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         getBalance,
         getBalanceErc20,
         sendErc20,
+        supplyAave,
+        borrowAave,
       }}
     >
       {children}
