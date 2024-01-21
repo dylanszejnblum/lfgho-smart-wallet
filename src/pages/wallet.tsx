@@ -48,6 +48,20 @@ const tokens = [
       rootAddress: "0xaa8e23fb1079ea71e0a56f48a2aa51851d8433d0",
     },
   },
+  {
+    chainId: 11155111,
+    name: "Aave USDT ",
+    symbol: "aUSDT",
+    decimals: 6,
+    address: "0xAF0F6e8b0Dc5c913bbF4d14c22B4E78Dd14310B6",
+    logoURI:
+      "https://token-icons.s3.amazonaws.com/0x71fc860f7d3a592a4a98740e39db31d25db65ae8.png",
+    tags: ["pos", "erc20", "swapable", "metaTx"],
+    balance: "0",
+    extensions: {
+      rootAddress: "0xAF0F6e8b0Dc5c913bbF4d14c22B4E78Dd14310B6",
+    },
+  },
 ];
 const wallet = () => {
   const { accountAddress, getBalance, getBalanceErc20 } =

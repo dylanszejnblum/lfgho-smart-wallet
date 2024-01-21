@@ -32,6 +32,7 @@ import {
   toHex,
   formatUnits,
   parseUnits,
+  isAddress,
 } from "viem";
 import { normalize } from "viem/ens";
 import { DepositETH } from "@/utils/contracts/DepositETH";
@@ -625,7 +626,10 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     };
     setLoggedInUser(_loggedInUser);
     setAccountAddress(localPasskeyMetaInfoMap[sanitizedInput].accountAddress);
-
+    sessionStorage.setItem(
+      "addressOfUser",
+      localPasskeyMetaInfoMap[sanitizedInput].accountAddress
+    );
     console.log(verificationData.isValid);
     return verificationData.isValid;
   };
@@ -843,22 +847,45 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     tokenDecimals: number
   ) => {
     try {
-      const response = encodeFunctionData({
-        abi: erc20ABI,
-        functionName: "transfer",
-        args: [
-          addressToQuery as `0x${string}`,
-          parseUnits(amount, tokenDecimals),
-        ],
-      }) as Hex;
+      if (isAddress(addressToQuery)) {
+        const response = encodeFunctionData({
+          abi: erc20ABI,
+          functionName: "transfer",
+          args: [
+            addressToQuery as `0x${string}`,
+            parseUnits(amount, tokenDecimals),
+          ],
+        }) as Hex;
 
-      await sendUserOperation({
-        to: tokenAddress as `0x${string}`,
-        value: BigInt(0),
-        data: response,
-      });
+        await sendUserOperation({
+          to: tokenAddress as `0x${string}`,
+          value: BigInt(0),
+          data: response,
+        });
 
-      toast("Transaction send succesfully!");
+        toast("Transaction send succesfully!");
+      } else {
+        const ensAddress = await ethereumClient.getEnsAddress({
+          name: normalize(addressToQuery),
+        });
+
+        const response = encodeFunctionData({
+          abi: erc20ABI,
+          functionName: "transfer",
+          args: [
+            ensAddress as `0x${string}`,
+            parseUnits(amount, tokenDecimals),
+          ],
+        }) as Hex;
+
+        await sendUserOperation({
+          to: tokenAddress as `0x${string}`,
+          value: BigInt(0),
+          data: response,
+        });
+
+        toast("Transaction send succesfully!");
+      }
     } catch (error) {
       console.error("Failed to fetch balance:", error);
       return ""; // Return an empty string or some default value in case of error
@@ -903,7 +930,6 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
           data: supplyCallData,
         },
       ]);
-
       toast("Asset Supplied  succesfully!");
     } catch (error) {
       console.error("Failed to fetch balance:", error);

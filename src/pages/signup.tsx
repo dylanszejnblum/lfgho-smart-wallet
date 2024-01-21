@@ -113,6 +113,11 @@ const signup = () => {
                         />
                       </div>
 
+                      <span className="mt-4 text-center text-sm">
+                        Remember that your username will have the 0trust.eth
+                        termination
+                      </span>
+
                       <Button
                         className="w-full"
                         type="submit"
@@ -123,6 +128,7 @@ const signup = () => {
                       >
                         Create Username
                       </Button>
+
                       <div className="mt-4 text-center text-sm">
                         Dont wannt a username{" "}
                         <Link className="underline" href="/login">

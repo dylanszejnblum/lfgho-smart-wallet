@@ -1,6 +1,7 @@
 import withAuth from "@/hoc/withAuth";
 import { useEffect, useState } from "react";
 import { TabsTrigger, TabsList, TabsContent, Tabs } from "@/components/ui/tabs";
+import { useApplicationContext } from "@/context/ApplicationContext";
 
 import {
   Card,
@@ -26,6 +27,24 @@ const earn = () => {
   const [reserves, setReserves] = useState([]); // Initialize as an empty array
   const [selectedReserve, setSelectedReserve] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { supplyAave, borrowAave } = useApplicationContext();
+
+  const [amount, setAmount] = useState("");
+
+  // Handler to update the state
+  const handleInputChange = (event) => {
+    setAmount(event.target.value);
+  };
+
+  // Function to log the current state
+  const supplyAsset = async (underlyingAsset, decimals) => {
+    const addressOfUser = sessionStorage.getItem("addressOfUser");
+    console.log("Selected Asset :", underlyingAsset);
+    console.log("Amount:", amount);
+    console.log("decimals", decimals);
+    console.log(addressOfUser);
+    await supplyAave(underlyingAsset, addressOfUser, amount, decimals);
+  };
 
   const handleOpenDialog = (reserve) => {
     setSelectedReserve(reserve);
@@ -46,6 +65,7 @@ const earn = () => {
         // Check if data.userReserves.reservesData is an array
         console.log(data.reservesData);
         if (Array.isArray(data.reserves.reservesData)) {
+          console.log(data.reserves.reservesData);
           setReserves(data.reserves.reservesData);
         } else {
           console.error(
@@ -104,6 +124,8 @@ const earn = () => {
                                 className="flex-grow"
                                 id="amount"
                                 placeholder="0.00"
+                                value={amount}
+                                onChange={handleInputChange}
                               />
                             </div>
                           </div>
@@ -119,7 +141,15 @@ const earn = () => {
                             </div>
                           </div>
                           <div className="flex items-center justify-between">
-                            <Button className="flex-grow">
+                            <Button
+                              className="flex-grow"
+                              onClick={() =>
+                                supplyAsset(
+                                  reserve.underlyingAsset,
+                                  reserve.decimals
+                                )
+                              }
+                            >
                               Supply {reserve.symbol}
                             </Button>
                           </div>
