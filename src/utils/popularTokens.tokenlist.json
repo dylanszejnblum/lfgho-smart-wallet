@@ -1,0 +1,33 @@
+{
+  "name": "Tokens List Sepolia",
+  "logoURI": "https://assets.polygon.technology/tokenAssets/matic.svg",
+  "keywords": ["polygon", "default", "tokens"],
+  "tokens": [
+    {
+      "chainId": 11155111,
+      "name": "GHO Stablecoin",
+      "symbol": "GHO",
+      "decimals": 18,
+      "address": "0xc4bF5CbDaBE595361438F8c6a187bDc330539c60",
+      "logoURI": "https://app.aave.com/icons/tokens/gho.svg",
+      "tags": ["pos", "erc20", "swapable", "metaTx"],
+      "balance": "0",
+      "extensions": {
+        "rootAddress": "0xc4bF5CbDaBE595361438F8c6a187bDc330539c60"
+      }
+    },
+    {
+      "chainId": 11155111,
+      "name": "USDT Stablecoin",
+      "symbol": "USDT",
+      "decimals": 6,
+      "address": "0xaa8e23fb1079ea71e0a56f48a2aa51851d8433d0",
+      "logoURI": "https://token-icons.s3.amazonaws.com/0xdac17f958d2ee523a2206206994597c13d831ec7.png",
+      "tags": ["pos", "erc20", "swapable", "metaTx"],
+      "balance": "0",
+      "extensions": {
+        "rootAddress": "0xaa8e23fb1079ea71e0a56f48a2aa51851d8433d0"
+      }
+    }
+  ]
+}

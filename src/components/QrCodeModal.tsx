@@ -35,8 +35,8 @@ const QrCodeModal = () => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const triggerButton = (
-    <Button onClick={() => setOpen(true)} disabled={!accountAddress}>
-      <QrCodeIcon className="mr-2" /> QR Code
+    <Button onClick={() => setOpen(true)} disabled={!accountAddress} size="lg">
+      <QrCodeIcon className="mr-2" /> Receive Money
     </Button>
   );
 

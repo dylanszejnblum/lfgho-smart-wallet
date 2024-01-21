@@ -21,6 +21,7 @@ import {
   Transport,
   createPublicClient,
   encodeFunctionData,
+  formatEther,
   getAddress,
   hexToString,
   http,
@@ -28,6 +29,7 @@ import {
   numberToBytes,
   pad,
   toHex,
+  formatUnits,
 } from "viem";
 import { normalize } from "viem/ens";
 import {
@@ -61,6 +63,7 @@ import {
   UserOperation,
   getAccountNonce,
 } from "permissionless";
+import { erc20ABI } from "wagmi";
 // Context Type
 type ApplicationContextType = {
   ethereumClient: PublicClient<Transport, Chain> | undefined;
@@ -69,6 +72,7 @@ type ApplicationContextType = {
   accountAddress: `0x${string}` | undefined;
   accountFactoryAddress: `0x${string}` | undefined;
   entryPointAddress: `0x${string}` | undefined;
+  balance: any | 0;
   chain: `0x${string}` | undefined;
   handlePasskeyCreation: (
     { yubikeyOnly }: { yubikeyOnly?: boolean },
@@ -97,6 +101,12 @@ type ApplicationContextType = {
       data: `0x${string}`;
     }[]
   ) => Promise<void>;
+  getBalance: (address: string) => Promise<string>;
+  getBalanceErc20: (
+    tokenAddress: string,
+    addressToQuery: string,
+    decimals: number
+  ) => Promise<string>;
 };
 
 type PasskeyMetaInfo = {
@@ -125,6 +135,7 @@ export const ApplicationContext = createContext<ApplicationContextType>({
   accountAddress: undefined,
   accountFactoryAddress: undefined,
   entryPointAddress: undefined,
+  balance: 0,
   chain: undefined,
   handlePasskeyCreation: async () => {},
   handleUsernameCreation: async () => {},
@@ -151,6 +162,16 @@ export const ApplicationContext = createContext<ApplicationContextType>({
       data: `0x${string}`;
     }[]
   ) => {},
+  getBalance: async (address: string) => {
+    return ""; // Should return a string to match the expected type
+  },
+  getBalanceErc20: async (
+    tokenAddress: string,
+    addressToQuery: string,
+    decimals: number
+  ) => {
+    return "";
+  },
 });
 
 // Provider Props Type
@@ -170,6 +191,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     useState<PimlicoPaymasterV1Client>();
 
   const [accountAddress, setAccountAddress] = useState<`0x${string}`>();
+  const [balance, setBalance] = useState<any>();
   const accountFactoryAddress = "0x91161e6d7E9B6eCDb488467A5bd8A526C5f75A33";
   const entryPointAddress = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
   const foreverSubdomainRegistrar =
@@ -740,6 +762,36 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     }
   }
 
+  const getBalance = async (address: string): Promise<string> => {
+    try {
+      const response = await ethereumClient.getBalance({
+        address: address as `0x${string}`,
+      });
+      return formatEther(response).toString(); // This will return a string
+    } catch (error) {
+      console.error("Failed to fetch balance:", error);
+      return ""; // Return an empty string or some default value in case of error
+    }
+  };
+  const getBalanceErc20 = async (
+    tokenAddress: string,
+    addressToQuery: string,
+    decimals: number
+  ): Promise<string> => {
+    try {
+      const response = await ethereumClient.readContract({
+        address: tokenAddress as `0x${string}`,
+        abi: erc20ABI,
+        functionName: "balanceOf",
+        args: [addressToQuery as `0x${string}`],
+      });
+      return formatUnits(response, decimals).toString(); // This will return a string
+    } catch (error) {
+      console.error("Failed to fetch balance:", error);
+      return ""; // Return an empty string or some default value in case of error
+    }
+  };
+
   return (
     <ApplicationContext.Provider
       value={{
@@ -749,6 +801,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         accountAddress,
         accountFactoryAddress,
         entryPointAddress,
+        balance,
         chain,
         handlePasskeyCreation,
         handleUsernameCreation,
@@ -758,6 +811,8 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         isUsernameAvailable,
         sendUserOperation,
         sendBatchUserOperation,
+        getBalance,
+        getBalanceErc20,
       }}
     >
       {children}

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import withAuth from "@/hoc/withAuth";
 
 import {
@@ -19,9 +20,46 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 
-const send = () => {
+import { useApplicationContext } from "@/context/ApplicationContext";
+const tokens = [
+  {
+    chainId: 11155111,
+    name: "GHO Stablecoin",
+    symbol: "GHO",
+    decimals: 18,
+    address: "0xc4bF5CbDaBE595361438F8c6a187bDc330539c60",
+    logoURI: "https://app.aave.com/icons/tokens/gho.svg",
+    tags: ["pos", "erc20", "swapable", "metaTx"],
+    balance: "0",
+    extensions: {
+      rootAddress: "0xc4bF5CbDaBE595361438F8c6a187bDc330539c60",
+    },
+  },
+  {
+    chainId: 11155111,
+    name: "USDT Stablecoin",
+    symbol: "USDT",
+    decimals: 6,
+    address: "0xaa8e23fb1079ea71e0a56f48a2aa51851d8433d0",
+    logoURI:
+      "https://token-icons.s3.amazonaws.com/0xdac17f958d2ee523a2206206994597c13d831ec7.png",
+    tags: ["pos", "erc20", "swapable", "metaTx"],
+    balance: "0",
+    extensions: {
+      rootAddress: "0xaa8e23fb1079ea71e0a56f48a2aa51851d8433d0",
+    },
+  },
+];
+const Send = () => {
+  const { accountAddress } = useApplicationContext();
+  const [selectedAsset, setSelectedAsset] = useState("");
+
+  const handleSelectChange = (event) => {
+    setSelectedAsset(event.target.value);
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen ">
+    <div className="flex flex-col items-center justify-center min-h-screen">
       <div className="w-full max-w-md">
         <Card>
           <CardHeader>
@@ -38,14 +76,16 @@ const send = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="asset">Asset</Label>
-              <Select>
-                <SelectTrigger id="asset">
+              <Select value={selectedAsset} onChange={handleSelectChange}>
+                <SelectTrigger>
                   <SelectValue placeholder="Select asset" />
                 </SelectTrigger>
                 <SelectContent position="popper">
-                  <SelectItem value="eth">ETH</SelectItem>
-                  <SelectItem value="GHO">GHO</SelectItem>
-                  <SelectItem value="usdc">USDC</SelectItem>
+                  {tokens.map((token) => (
+                    <SelectItem key={token.symbol} value={token.symbol}>
+                      {token.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -70,4 +110,4 @@ const send = () => {
   );
 };
 
-export default withAuth(send);
+export default withAuth(Send);

@@ -1,5 +1,5 @@
 import { TabsTrigger, TabsList, Tabs } from "@/components/ui/tabs";
-import { Wallet, LineChart, Users, Send } from "lucide-react";
+import { Wallet, LineChart, BadgeDollarSign, Send } from "lucide-react";
 import Link from "next/link";
 export default function Component() {
   return (
@@ -36,8 +36,8 @@ export default function Component() {
           <Link href={"/groups"}>
             <TabsTrigger value="groups">
               <div className="flex flex-col items-center justify-center">
-                <Users className="h-6 w-6" />
-                <span className="text-sm font-semibold mt-1">Groups</span>
+                <BadgeDollarSign className="h-6 w-6" />
+                <span className="text-sm font-semibold mt-1">Credit</span>
               </div>
             </TabsTrigger>
           </Link>

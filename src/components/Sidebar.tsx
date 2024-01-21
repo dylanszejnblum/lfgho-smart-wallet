@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import { Wallet, LineChart, Users, PackageCheck, Send } from "lucide-react";
+import {
+  Wallet,
+  LineChart,
+  BadgeDollarSign,
+  PackageCheck,
+  Send,
+} from "lucide-react";
 import { ModeToggle } from "./ModeToggle";
 
 export default function Sidebar() {
@@ -70,8 +76,8 @@ export default function Sidebar() {
                   : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
               }`}
             >
-              <Users className="h-4 w-4" />
-              Groups
+              <BadgeDollarSign className="h-4 w-4" />
+              Credit delegation
             </Link>
           </nav>
         </div>
