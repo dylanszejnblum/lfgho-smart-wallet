@@ -30,8 +30,10 @@ import {
   pad,
   toHex,
   formatUnits,
+  parseUnits,
 } from "viem";
 import { normalize } from "viem/ens";
+import { DepositETH } from "@/utils/contracts/DepositETH";
 import {
   Verification,
   create,
@@ -107,6 +109,12 @@ type ApplicationContextType = {
     addressToQuery: string,
     decimals: number
   ) => Promise<string>;
+  approveErc20: (
+    tokenAddress: string,
+    addressToQuery: string,
+    amount: string,
+    tokenDecimals: number
+  ) => Promise<any>;
 };
 
 type PasskeyMetaInfo = {
@@ -172,6 +180,12 @@ export const ApplicationContext = createContext<ApplicationContextType>({
   ) => {
     return "";
   },
+  approveErc20: async (
+    tokenAddress: string,
+    addressToQuery: string,
+    amount: string,
+    tokenDecimals: number
+  ) => {},
 });
 
 // Provider Props Type
@@ -792,6 +806,39 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     }
   };
 
+  const approveErc20 = async (
+    tokenAddress: string,
+    addressToQuery: string,
+    amount: string,
+    tokenDecimals: number
+  ) => {
+    try {
+      const response = await encodeFunctionData({
+        abi: erc20ABI,
+        functionName: "approve",
+        args: [
+          addressToQuery as `0x${string}`,
+          parseUnits(amount, tokenDecimals),
+        ],
+      });
+
+      await sendUserOperation({
+        to: tokenAddress as `0x${string}`,
+        value: BigInt(1),
+        data: response,
+      });
+    } catch (error) {
+      console.error("Failed to fetch balance:", error);
+      return ""; // Return an empty string or some default value in case of error
+    }
+  };
+
+  // const supplyAave = async (
+  //   assetAddress: string,
+  //   amount,
+  //   onBehalfOf: string
+  // ) => {};
+
   return (
     <ApplicationContext.Provider
       value={{
@@ -813,6 +860,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         sendBatchUserOperation,
         getBalance,
         getBalanceErc20,
+        approveErc20,
       }}
     >
       {children}
