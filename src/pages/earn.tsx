@@ -1,32 +1,69 @@
 import withAuth from "@/hoc/withAuth";
-
+import { useEffect, useState } from "react";
 import { TabsTrigger, TabsList, TabsContent, Tabs } from "@/components/ui/tabs";
-import {
-  TableHead,
-  TableRow,
-  TableHeader,
-  TableCell,
-  TableBody,
-  Table,
-} from "@/components/ui/table";
 
-const SupplyAssets = [
-  {
-    image:
-      "https://token-icons.s3.amazonaws.com/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2.png",
-    name: "Ethereum",
-    apy: "2",
-  },
-];
-const borrowAssets = [
-  {
-    image: "https://app.aave.com/icons/tokens/gho.svg",
-    name: "GHO",
-    apy: "2.12",
-  },
-];
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+const { fetchContractData } = require("@/utils/aave");
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const earn = () => {
+  const [reserves, setReserves] = useState([]); // Initialize as an empty array
+  const [selectedReserve, setSelectedReserve] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleOpenDialog = (reserve) => {
+    setSelectedReserve(reserve);
+    setIsDialogOpen(true);
+  };
+
+  // Function to close the dialog
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await fetchContractData(
+          "0x9e51BB5169931ee745d44F01168172c80678B628"
+        );
+        // Check if data.userReserves.reservesData is an array
+        console.log(data.reservesData);
+        if (Array.isArray(data.reserves.reservesData)) {
+          setReserves(data.reserves.reservesData);
+        } else {
+          console.error(
+            "userReserves.userReserves is not an array:",
+            data.reserves.reservesData
+          );
+        }
+      } catch (error) {
+        console.error("Failed to fetch contract data:", error);
+      }
+    };
+
+    fetchData();
+  }, []); // Empty dependency array ensures this effect runs only once
+
+  const calculateAPY = (rate) => {
+    return ((parseFloat(rate) / 1e27) * 100).toFixed(2); // Example conversion
+  };
   return (
     <>
       <Tabs className="w-full mt-4" defaultValue="supply">
@@ -34,61 +71,139 @@ const earn = () => {
           <TabsTrigger value="supply">Supply</TabsTrigger>
           <TabsTrigger value="borrow">Borrow</TabsTrigger>
         </TabsList>
+
         <TabsContent value="supply">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px]"></TableHead>
-                <TableHead>Asset</TableHead>
-                <TableHead>APY</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {SupplyAssets.map((asset) => (
-                <TableRow key={asset.apy}>
-                  <TableCell>
-                    <img
-                      alt="Asset Image"
-                      className="aspect-square rounded-md object-cover"
-                      height="64"
-                      src={asset.image}
-                      width="64"
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{asset.name}</TableCell>
-                  <TableCell>{asset.apy}%</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {reserves.map((reserve) => (
+            <Card key={reserve.id}>
+              <CardHeader>
+                <CardTitle> {reserve.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>Supply {calculateAPY(reserve.liquidityRate)}%</p>
+              </CardContent>
+              <CardFooter>
+                <Dialog>
+                  <DialogTrigger>
+                    <div className="flex items-center justify-center mb-5 w-full">
+                      <Button variant="default" className="w-full">
+                        Supply
+                      </Button>
+                    </div>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <Card className="w-full max-w-md rounded-lg shadow-md">
+                      <CardHeader>
+                        <CardTitle>Supply {reserve.symbol}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-col space-y-4">
+                          <div className="flex flex-col space-y-1">
+                            <span>Amount</span>
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                className="flex-grow"
+                                id="amount"
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-col space-y-2">
+                            <h3 className="text-lg font-semibold">
+                              Transaction overview
+                            </h3>
+                            <div className="flex justify-between">
+                              <span>Supply APY</span>
+                              <span className="text-gray-500">
+                                {calculateAPY(reserve.liquidityRate)}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <Button className="flex-grow">
+                              Supply {reserve.symbol}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </DialogContent>
+                </Dialog>
+              </CardFooter>
+            </Card>
+          ))}
         </TabsContent>
+
         <TabsContent value="borrow">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px]"></TableHead>
-                <TableHead>Asset</TableHead>
-                <TableHead>APY</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {borrowAssets.map((asset) => (
-                <TableRow key={asset.apy}>
-                  <TableCell>
-                    <img
-                      alt="Asset Image"
-                      className="aspect-square rounded-md object-cover"
-                      height="64"
-                      src={asset.image}
-                      width="64"
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{asset.name}</TableCell>
-                  <TableCell>{asset.apy}%</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {reserves.map((reserve) => (
+            <>
+              <Card key={reserve.id}>
+                <CardHeader>
+                  <CardTitle> {reserve.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p>
+                    Variable Borrow rate :{" "}
+                    {calculateAPY(reserve.variableBorrowRate)}%
+                  </p>
+                  <p>
+                    {" "}
+                    Reserve Stable Borrow Rate{" "}
+                    {calculateAPY(reserve.stableBorrowRate)}%
+                  </p>
+                </CardContent>
+                <CardFooter>
+                  <Dialog>
+                    <DialogTrigger>
+                      <div className="flex items-center justify-center mb-5 w-full">
+                        <Button variant="default" className="w-full">
+                          Borrow{" "}
+                        </Button>
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <Card className="w-full max-w-md rounded-lg shadow-md">
+                        <CardHeader>
+                          <CardTitle>Borrow {reserve.symbol}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex flex-col space-y-4">
+                            <div className="flex flex-col space-y-1">
+                              <span>Amount</span>
+                              <div className="flex items-center space-x-2">
+                                <Input
+                                  className="flex-grow"
+                                  id="amount"
+                                  placeholder="0.00"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex flex-col space-y-2">
+                              <h3 className="text-lg font-semibold">
+                                Transaction overview
+                              </h3>
+                              <div className="flex justify-between">
+                                <span> Variable Borrow rate : </span>
+                                <span className="text-gray-500">
+                                  {calculateAPY(reserve.variableBorrowRate)}%
+                                </span>
+                              </div>
+
+                              <p className="text-sm text-gray-500">{`Liquidation at <1.0`}</p>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <Button className="flex-grow">
+                                Borrow {reserve.symbol}
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </DialogContent>
+                  </Dialog>
+                </CardFooter>
+              </Card>
+            </>
+          ))}
         </TabsContent>
       </Tabs>
     </>
