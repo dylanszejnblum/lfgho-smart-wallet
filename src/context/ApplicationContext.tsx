@@ -109,7 +109,7 @@ type ApplicationContextType = {
     addressToQuery: string,
     decimals: number
   ) => Promise<string>;
-  approveErc20: (
+  sendErc20: (
     tokenAddress: string,
     addressToQuery: string,
     amount: string,
@@ -180,7 +180,7 @@ export const ApplicationContext = createContext<ApplicationContextType>({
   ) => {
     return "";
   },
-  approveErc20: async (
+  sendErc20: async (
     tokenAddress: string,
     addressToQuery: string,
     amount: string,
@@ -618,7 +618,11 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       data: `0x${string}`;
     }[]
   ) => {
-    if (!loggedInUser?.nameOrUsername || !loggedInUser?.passkeyMetaInfo?.credentialId || !loggedInUser?.passkeyMetaInfo?.publicKeyAsHex) {
+    if (
+      !loggedInUser?.nameOrUsername ||
+      !loggedInUser?.passkeyMetaInfo?.credentialId ||
+      !loggedInUser?.passkeyMetaInfo?.publicKeyAsHex
+    ) {
       throw new Error("Please Login to send user operation");
     }
 
@@ -654,8 +658,11 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     value: bigint;
     data: `0x${string}`;
   }) => {
-
-    if (!loggedInUser?.nameOrUsername || !loggedInUser?.passkeyMetaInfo?.credentialId || !loggedInUser?.passkeyMetaInfo?.publicKeyAsHex) {
+    if (
+      !loggedInUser?.nameOrUsername ||
+      !loggedInUser?.passkeyMetaInfo?.credentialId ||
+      !loggedInUser?.passkeyMetaInfo?.publicKeyAsHex
+    ) {
       throw new Error("Please Login to send user operation");
     }
     const publicKeyAsHex = loggedInUser.passkeyMetaInfo.publicKeyAsHex;
@@ -798,7 +805,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     }
   };
 
-  const approveErc20 = async (
+  const sendErc20 = async (
     tokenAddress: string,
     addressToQuery: string,
     amount: string,
@@ -807,16 +814,16 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     try {
       const response = encodeFunctionData({
         abi: erc20ABI,
-        functionName: "approve",
+        functionName: "transfer",
         args: [
           addressToQuery as `0x${string}`,
           parseUnits(amount, tokenDecimals),
         ],
-      });
+      }) as Hex;
 
       await sendUserOperation({
         to: tokenAddress as `0x${string}`,
-        value: BigInt(1),
+        value: BigInt(0),
         data: response,
       });
     } catch (error) {
@@ -852,7 +859,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
         sendBatchUserOperation,
         getBalance,
         getBalanceErc20,
-        approveErc20,
+        sendErc20,
       }}
     >
       {children}
