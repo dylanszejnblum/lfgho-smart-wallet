@@ -73,7 +73,11 @@ const Send = () => {
     console.log("Amount:", amount);
     const addressOfUser = sessionStorage.getItem("addressOfUser");
 
-    await sendErc20(selectedAsset, recipientAddress, amount, 6);
+    if (selectedAsset == "0xc4bF5CbDaBE595361438F8c6a187bDc330539c60") {
+      await sendErc20(selectedAsset, recipientAddress, amount, 18);
+    } else {
+      await sendErc20(selectedAsset, recipientAddress, amount, 6);
+    }
   };
 
   return (
