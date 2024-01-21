@@ -618,11 +618,7 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
       data: `0x${string}`;
     }[]
   ) => {
-    if (
-      !loggedInUser ||
-      !loggedInUser.nameOrUsername ||
-      loggedInUser.passkeyMetaInfo
-    ) {
+    if (!loggedInUser?.nameOrUsername || !loggedInUser?.passkeyMetaInfo?.accountAddress) {
       throw new Error("Please Login to send user operation");
     }
 
@@ -658,14 +654,10 @@ export const ApplicationProvider: React.FC<ApplicationContextProps> = ({
     value: bigint;
     data: `0x${string}`;
   }) => {
-    if (
-      !loggedInUser ||
-      !loggedInUser.nameOrUsername ||
-      loggedInUser.passkeyMetaInfo
-    ) {
+
+    if (!loggedInUser?.nameOrUsername || !loggedInUser?.passkeyMetaInfo?.accountAddress) {
       throw new Error("Please Login to send user operation");
     }
-
     const publicKeyAsHex = loggedInUser.passkeyMetaInfo.publicKeyAsHex;
     const publicKeyAsCryptoKey = await importPublicKeyAsCryptoKey(
       hex2buf(publicKeyAsHex)
